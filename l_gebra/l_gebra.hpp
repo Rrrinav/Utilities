@@ -116,6 +116,7 @@ namespace utl
     IL vec subtract(const vec<Y> &x);
   };
 
+  // Linear Interpolation
   template <typename T>
   ST IL T lerp(const T &start, const T &end, double t);
 

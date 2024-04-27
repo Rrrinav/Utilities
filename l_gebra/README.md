@@ -1,5 +1,6 @@
 # L_Gebra  
-    A simple header-only linear algebra library
+
+**A simple header-only linear algebra library**
 
 L_Gebra is a lightweight linear algebra library implemented in C++. It provides a simple interface for working with vectors of any size and performing basic arithmetic operations on them.
 
