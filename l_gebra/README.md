@@ -50,3 +50,7 @@ int main() {
 ## License
 
 This library is licensed under the MIT License. See the LICENSE file for details
+
+## Warning
+
+This isn't fully functional version, it is yet in devlopment.
