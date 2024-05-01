@@ -9,7 +9,6 @@ L_Gebra is a lightweight linear algebra library implemented in C++. It provides 
 - Header-only: No need to compile or link, just include the header file in your project.
 - Support for vectors of any size, with element-wise arithmetic operations.
 - Scalar multiplication and addition.
-- Linear interpolation (lerp) between two values.
 - Easy to use and integrate into your projects.
 
 ## Usage

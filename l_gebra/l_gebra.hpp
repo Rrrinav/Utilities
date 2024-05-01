@@ -1,5 +1,4 @@
-
-//  '##:::::::::::::::::'######:::'########:'########::'########:::::'###::::
+//   ##:::::::::::::::::'######:::'########:'########::'########:::::'###::::
 //   ##::::::::::::::::'##... ##:: ##.....:: ##.... ##: ##.... ##:::'## ##:::
 //   ##:::::::::::::::: ##:::..::: ##::::::: ##:::: ##: ##:::: ##::'##:. ##::
 //   ##:::::::::::::::: ##::'####: ######::: ########:: ########::'##:::. ##:
@@ -32,16 +31,16 @@
  * SOFTWARE.
  */
 
-// HOW TO USE?
-//  You just need to include this header file in your project and use the vec
-//  class with namespace utl. You also need macro L_GEBRA_IMPLEMENTATION before
-//  "#include "l_gebra"" in one of your source files to include the
-//  implementation. Basically :- #define L_GEBRA_IMPLEMENTATION #include
-//  "l_gebra.hpp"
+/*
+----------------------------------HOW TO USE?-----------------------------------------
+| You just need to include this header file in your project and use the vec          |
+| class with namespace utl. You also need macro L_GEBRA_IMPLEMENTATION before        |
+| "#include "l_gebra"" in one of your source files to include the                    |
+| implementation. Basically :- #define L_GEBRA_IMPLEMENTATION #include "l_gebra.hpp" |
+--------------------------------------------------------------------------------------
+*/
 
 #pragma once
-
-#define L_GEBRA_IMPLEMENTATION
 
 #include <cassert>
 #include <cmath>
@@ -49,6 +48,7 @@
 #include <initializer_list>
 #include <iostream>
 #include <stdexcept>
+#include <type_traits>
 #include <vector>
 
 #define IL inline
@@ -57,6 +57,7 @@
 
 namespace utl
 {
+
     // Matrix class
     template <typename T>
     class Matrix
@@ -76,15 +77,19 @@ namespace utl
         {
             size_t size = 0;
             size_t rowSize = _cols;  // Size of the first row
-            for (const auto &row : initList) {
+            for (const auto &row : initList)
+            {
                 size += row.size();
-                if (row.size() != rowSize) {
+                if (row.size() != rowSize)
+                {
                     throw std::invalid_argument("Initializer list rows have different sizes");
                 }
             }
             data.reserve(size);
-            for (const auto &row : initList) {
-                for (const auto &val : row) {
+            for (const auto &row : initList)
+            {
+                for (const auto &val : row)
+                {
                     data.push_back(val);
                 }
             }
@@ -107,7 +112,8 @@ namespace utl
 
         T &operator()(size_t row, size_t col)
         {
-            if (row >= rows() || col >= cols()) {
+            if (row >= rows() || col >= cols())
+            {
                 throw std::out_of_range("Index out of range");
             }
             return data[row * cols() + col];
@@ -115,7 +121,8 @@ namespace utl
 
         const T &operator()(size_t row, size_t col) const
         {
-            if (row >= rows() || col >= cols()) {
+            if (row >= rows() || col >= cols())
+            {
                 throw std::out_of_range("Index out of range");
             }
             return data[row * cols() + col];
@@ -142,7 +149,8 @@ namespace utl
 
         Vec(int size) : _size(size), Matrix<T>(size, 1)
         {
-            if (size <= 0) {
+            if (size <= 0)
+            {
                 throw std::invalid_argument("Vector size must be positve");
             }
         }
@@ -174,15 +182,16 @@ namespace utl
         IL Vec operator-(const Vec<Y> &x) const;
 
         template <typename Y>
-        IL T dot(const Vec<Y> &x) const;
+        IL double dot(const Vec<Y> &x) const;
         template <typename Y>
         IL Vec cross(const Vec<Y> &x) const;
-        V IL T magnitude() const;
-        V IL T normalize();
+        V IL double magnitude() const;
+        V IL float normalize();
+        V IL Vec<float> get_normalized_vector();
         template <typename Y>
         IL float angle(const Vec<Y> &x) const;
         template <typename Y>
-        IL float distance(const Vec<Y> &x) const;
+        IL double distance(const Vec<Y> &x) const;
         template <typename Y>
         IL double projection(const Vec<Y> &x) const;
     };
@@ -212,13 +221,16 @@ namespace utl
     template <typename Y>
     Matrix<T> Matrix<T>::operator+(const Matrix<Y> &other) const
     {
-        if (_rows != other.rows() || _cols != other.cols()) {
+        if (_rows != other.rows() || _cols != other.cols())
+        {
             throw std::invalid_argument("Matrix dimensions must match for addition");
         }
 
         Matrix<T> result(_rows, _cols);
-        for (size_t i = 0; i < _rows; ++i) {
-            for (size_t j = 0; j < _cols; ++j) {
+        for (size_t i = 0; i < _rows; ++i)
+        {
+            for (size_t j = 0; j < _cols; ++j)
+            {
                 result(i, j) = (*this)(i, j) + static_cast<T>(other(i, j));
             }
         }
@@ -229,13 +241,16 @@ namespace utl
     template <typename Y>
     Matrix<T> Matrix<T>::operator-(const Matrix<Y> &other) const
     {
-        if (_rows != other.rows() || _cols != other.cols()) {
+        if (_rows != other.rows() || _cols != other.cols())
+        {
             throw std::invalid_argument("Matrix dimensions must match for subtraction");
         }
 
         Matrix<T> result(_rows, _cols);
-        for (size_t i = 0; i < _rows; ++i) {
-            for (size_t j = 0; j < _cols; ++j) {
+        for (size_t i = 0; i < _rows; ++i)
+        {
+            for (size_t j = 0; j < _cols; ++j)
+            {
                 result(i, j) = (*this)(i, j) - static_cast<T>(other(i, j));
             }
         }
@@ -246,8 +261,10 @@ namespace utl
     Matrix<T> Matrix<T>::operator*(const T &scalar) const
     {
         Matrix<T> result(_rows, _cols);
-        for (size_t i = 0; i < _rows; ++i) {
-            for (size_t j = 0; j < _cols; ++j) {
+        for (size_t i = 0; i < _rows; ++i)
+        {
+            for (size_t j = 0; j < _cols; ++j)
+            {
                 result(i, j) = (*this)(i, j) * scalar;
             }
         }
@@ -258,15 +275,19 @@ namespace utl
     template <typename Y>
     Matrix<T> Matrix<T>::operator*(const Matrix<Y> &other) const
     {
-        if (_cols != other.rows()) {
+        if (_cols != other.rows())
+        {
             throw std::invalid_argument("Matrix dimensions do not match for multiplication");
         }
 
         Matrix<T> result(_rows, other.cols());
-        for (size_t i = 0; i < _rows; ++i) {
-            for (size_t j = 0; j < other.cols(); ++j) {
+        for (size_t i = 0; i < _rows; ++i)
+        {
+            for (size_t j = 0; j < other.cols(); ++j)
+            {
                 T sum = static_cast<T>(0);
-                for (size_t k = 0; k < _cols; ++k) {
+                for (size_t k = 0; k < _cols; ++k)
+                {
                     sum += (*this)(i, k) * static_cast<T>(other(k, j));
                 }
                 result(i, j) = sum;
@@ -279,7 +300,8 @@ namespace utl
     IL void Vec<T>::print()
     {
         std::cout << "[ ";
-        for (size_t i = 0; i < this->size(); ++i) {
+        for (size_t i = 0; i < this->size(); ++i)
+        {
             std::cout << (*this)[i] << " ";
         }
         std::cout << "]\n";
@@ -288,7 +310,8 @@ namespace utl
     template <typename T>
     IL T &Vec<T>::operator[](size_t i)
     {
-        if (i >= this->size()) {
+        if (i >= this->size())
+        {
             throw std::out_of_range("Index out of range");
         }
         return this->operator()(i, 0);
@@ -297,7 +320,8 @@ namespace utl
     template <typename T>
     IL const T &Vec<T>::operator[](size_t i) const
     {
-        if (i >= this->size()) {
+        if (i >= this->size())
+        {
             throw std::out_of_range("Index out of range");
         }
         return this->operator()(i, 0);
@@ -307,7 +331,8 @@ namespace utl
     IL Vec<T> Vec<T>::operator*(const T x) const
     {
         Vec<T> result(this->size());
-        for (size_t i = 0; i < this->size(); ++i) {
+        for (size_t i = 0; i < this->size(); ++i)
+        {
             result[i] = (*this)[i] * x;
         }
         return result;
@@ -317,34 +342,14 @@ namespace utl
     template <typename Y>
     Vec<T> Vec<T>::operator*(const Vec<Y> &x) const
     {
-        std::cout << "_size: " << _size << ", x.size(): " << x.size() << std::endl;
-
-        if (_size != x.size()) {
+        if (_size != x.size())
+        {
             throw std::invalid_argument("Vector sizes do not match for multiplication");
         }
-
         Vec<T> result(_size);
-
-        std::cout << "result.size(): " << result.size() << std::endl;
-
-        for (size_t i = 0; i < _size; ++i) {
-            std::cout << "Loop iteration: " << i << std::endl;
-
-            // Ensure index is within bounds for this vector
-            if (i >= _size) {
-                throw std::out_of_range("Index out of range for this vector");
-            }
-
-            // Ensure index is within bounds for the other vector
-            if (i >= x.size()) {
-                throw std::out_of_range("Index out of range for other vector");
-            }
-
-            std::cout << "this[" << i << "]: " << (*this)[i] << ", x[" << i << "]: " << x[i] << std::endl;
-
+        for (size_t i = 0; i < _size; ++i)
+        {
             result[i] = (*this)[i] * static_cast<T>(x[i]);
-
-            std::cout << "result[" << i << "]: " << result[i] << std::endl;
         }
 
         return result;
@@ -353,12 +358,15 @@ namespace utl
     template <typename Y>
     IL Vec<T> Vec<T>::operator/(const Vec<Y> &x) const
     {
-        if (this->size() != x.size()) {
+        if (this->size() != x.size())
+        {
             throw std::invalid_argument("Vector sizes do not match for division");
         }
         Vec<T> result(this->size());
-        for (size_t i = 0; i < this->size(); ++i) {
-            if (x[i] == 0) {
+        for (size_t i = 0; i < this->size(); ++i)
+        {
+            if (x[i] == 0)
+            {
                 throw std::invalid_argument("Division by zero");
             }
             result[i] = (*this)[i] / static_cast<T>(x[i]);
@@ -370,7 +378,8 @@ namespace utl
     IL Vec<T> Vec<T>::operator+(const T x) const
     {
         Vec<T> result(this->size());
-        for (size_t i = 0; i < this->size(); ++i) {
+        for (size_t i = 0; i < this->size(); ++i)
+        {
             result[i] = (*this)[i] + x;
         }
         return result;
@@ -380,11 +389,13 @@ namespace utl
     template <typename Y>
     IL Vec<T> Vec<T>::operator+(const Vec<Y> &x) const
     {
-        if (this->size() != x.size()) {
+        if (this->size() != x.size())
+        {
             throw std::invalid_argument("Vector sizes do not match for addition");
         }
         Vec<T> result(this->size());
-        for (size_t i = 0; i < this->size(); ++i) {
+        for (size_t i = 0; i < this->size(); ++i)
+        {
             result[i] = (*this)[i] + static_cast<T>(x[i]);
         }
         return result;
@@ -394,11 +405,13 @@ namespace utl
     template <typename Y>
     IL Vec<T> Vec<T>::operator-(const Vec<Y> &x) const
     {
-        if (this->size() != x.size()) {
+        if (this->size() != x.size())
+        {
             throw std::invalid_argument("Vector sizes do not match for subtraction");
         }
         Vec<T> result(this->size());
-        for (size_t i = 0; i < this->size(); ++i) {
+        for (size_t i = 0; i < this->size(); ++i)
+        {
             result[i] = (*this)[i] - static_cast<T>(x[i]);
         }
         return result;
@@ -406,14 +419,16 @@ namespace utl
 
     template <typename T>
     template <typename Y>
-    IL T Vec<T>::dot(const Vec<Y> &x) const
+    IL double Vec<T>::dot(const Vec<Y> &x) const
     {
-        if (this->size() != x.size()) {
+        if (this->size() != x.size())
+        {
             throw std::invalid_argument("Vector sizes do not match for dot product");
         }
-        T result;
-        for (size_t i = 0; i < this->size(); ++i) {
-            result += (*this)[i] * static_cast<T>(x[i]);
+        double result;
+        for (size_t i = 0; i < this->size(); ++i)
+        {
+            result += (double)(*this)[i] * (double)(x[i]);
         }
         return result;
     }
@@ -422,7 +437,8 @@ namespace utl
     template <typename Y>
     IL Vec<T> Vec<T>::cross(const Vec<Y> &x) const
     {
-        if (this->size() != 3 || x.size() != 3) {
+        if (this->size() != 3 || x.size() != 3)
+        {
             throw std::invalid_argument("Cross product is only defined for 3D Vectors");
         }
         Vec<T> result(3);
@@ -433,55 +449,99 @@ namespace utl
     }
 
     template <typename T>
-    IL T Vec<T>::magnitude() const
+    IL double Vec<T>::magnitude() const
     {
         T result = 0;
-        for (size_t i = 0; i < this->size(); ++i) {
+        for (size_t i = 0; i < this->size(); ++i)
+        {
             result += (*this)[i] * (*this)[i];
         }
         return std::sqrt(result);
     }
 
     template <typename T>
-    IL T Vec<T>::normalize()
+    IL float Vec<T>::normalize()
     {
-        T mag = magnitude();
-        if (mag == 0) {
+        double mag = magnitude();
+        if (mag == 0)
+        {
             throw std::invalid_argument("Cannot normalize a zero vector");
         }
-        for (size_t i = 0; i < this->size(); ++i) {
+        for (size_t i = 0; i < _size; ++i)
+        {
             (*this)[i] /= mag;
         }
         return mag;
     }
 
     template <typename T>
-    template <typename Y>
-    IL float Vec<T>::angle(const Vec<Y> &x) const
+    IL Vec<float> Vec<T>::get_normalized_vector()
     {
-        if (this->size() != x.size()) {
-            throw std::invalid_argument("Vector sizes do not match for angle calculation");
+        double mag = magnitude();
+        if (mag == 0)
+        {
+            throw std::invalid_argument("Cannot normalize a zero vector");
         }
-        double thisMag = magnitude();
-        double xMag = x.magnitude();
-        if (thisMag == 0 || xMag == 0) {
-            throw std::invalid_argument("Cannot calculate angle for zero vector(s)");
+        Vec<float> result(_size);
+
+        for (size_t i = 0; i < _size; ++i)
+        {
+            result[i] = (float)(*this)[i] / mag;
         }
-        return std::acos(static_cast<float>(dot(x) / (thisMag * xMag)));
+        return result;
     }
 
     template <typename T>
     template <typename Y>
-    IL float Vec<T>::distance(const Vec<Y> &x) const
+    IL float Vec<T>::angle(const Vec<Y> &x) const
     {
-        if (this->size() != x.size()) {
+        if (this->size() != x.size())
+        {
+            throw std::invalid_argument("Vector sizes do not match for angle calculation");
+        }
+        double thisMag = magnitude();
+        double xMag = x.magnitude();
+        if (thisMag == 0 || xMag == 0)
+        {
+            throw std::invalid_argument("Cannot calculate angle for zero vector(s)");
+        }
+        float d = dot(x);
+        return static_cast<float>(std::acos(static_cast<float>(dot(x) / (thisMag * xMag))));
+    }
+
+    template <typename T>
+    template <typename Y>
+    IL double Vec<T>::distance(const Vec<Y> &x) const
+    {
+        if (this->size() != x.size())
+        {
             throw std::invalid_argument("Vector sizes do not match for distance calculation");
         }
-        float result = 0;
-        for (size_t i = 0; i < this->size(); ++i) {
-            result += ((*this)[i] - static_cast<T>(x[i])) * ((*this)[i] - static_cast<T>(x[i]));
+        double result = 0;
+        for (size_t i = 0; i < this->size(); ++i)
+        {
+            result += ((*this)[i] - (double)(x[i])) * ((*this)[i] - (double)(x[i]));
         }
         return std::sqrt(result);
     }
+
+    template <typename T>
+    template <typename Y>
+    IL double Vec<T>::projection(const Vec<Y> &x) const
+    {
+        if (this->size() != x.size())
+        {
+            throw std::invalid_argument("Vector sizes do not match for projection");
+        }
+        double xMag = x.magnitude();
+        double dot = this->dot(x);
+        if (xMag == 0)
+        {
+            throw std::invalid_argument("Cannot project onto a zero vector");
+        }
+        return (this->dot(x) / (xMag * xMag));
+    }
+
 }  // namespace utl
+
 #endif  // L_GEBRA_IMPLEMENTATION
