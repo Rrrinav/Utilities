@@ -39,14 +39,19 @@
 --------------------------------------------------------------------------------------
 */
 
+// TODO:  min, max, lerp, ceil, clamp, Solving Linear Systems
+
 #pragma once
 
+#include <cwchar>
 #include <uchar.h>
 
 #include <cmath>
 #include <cstddef>
 #include <initializer_list>
+#include <iomanip>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
@@ -54,11 +59,15 @@
 #define S static
 #define V virtual
 
-// TODO: Sin, cos, min, max, lerp, ceil, clamp, vector * matrix, some default matrices and vectors, LU Decomposition, QR
-// Decomposition, Solving Linear Systems
-
 namespace utl
 {
+
+    enum class sol_type
+    {
+        Unique,
+        Infinite,
+        NoSolution
+    };
 
     // Matrix class
     template <typename T>
@@ -144,15 +153,43 @@ namespace utl
         IL Matrix<T> operator/(const Matrix<Y> &other) const;
         template <typename Y>
         IL Matrix<T> operator*(const Matrix<Y> &other) const;
+        IL void sin();
+        IL void cos();
         IL Matrix<T> transpose() const;
         double determinant() const;
         double cofactor(size_t row, size_t col) const;
         Matrix<T> minor(size_t row, size_t col) const;
         Matrix<T> inverse(const Matrix<T> &m);
         Matrix<T> power(int n);
-        Matrix<T> row_reduce(const Matrix<T> &m);
-        std::vector<T> eigenvalues(const Matrix<T> &m);
-        std::vector<std::vector<T>> eigenvectors(const Matrix<T> &m);
+        Matrix<T> row_reduce();
+        size_t rank() const;
+        T trace() const;
+        IL T norm() const;
+        IL void swap_rows(size_t r1, size_t r2);
+        IL void multiply_row(size_t r, float scalar);
+        IL void add_scaled_row(size_t r1, size_t r2, float scalar);
+        S std::vector<T> eigenvalues(const Matrix<T> &m);
+        S std::vector<std::vector<T>> eigenvectors(const Matrix<T> &m);
+        std::pair<Matrix<T>, Matrix<T>> lu_decomposition();
+        std::pair<Matrix<T>, Matrix<T>> qr_decomposition();
+        Matrix<T> augment(const Matrix<T> &other) const;
+        Matrix<T> gauss_elimination() const;
+        Matrix<T> row_echelon()
+        {
+            if (_cols < _rows)
+            {
+                throw std::invalid_argument("Matrix must have more columns than rows");
+            }
+
+            int c_row, c_col;
+            int max_count = 100;
+        }
+        S sol_type has_solution(const Matrix<T> &reduced_matrix);
+        Matrix<T> solve_linear_system(const Matrix<T> &b) const;
+        S IL Matrix<T> identity_matrix(size_t n);
+        S IL Matrix<T> zero_matrix(size_t n);
+        S IL Matrix<T> ones_matrix(size_t n);
+        S IL Matrix<T> random_matrix(size_t rows, size_t cols, T min, T max);
     };
 
     // Vec class
@@ -209,6 +246,10 @@ namespace utl
         IL Vec operator+(const Vec<Y, n_x> &x) const;
         template <typename Y, size_t n_x>
         IL Vec operator-(const Vec<Y, n_x> &x) const;
+        template <typename Y>
+        Vec<T, _size> operator*(const Matrix<Y> &m) const;
+        IL void sin();
+        IL void cos();
         template <typename Y, size_t n_x>
         IL double dot(const Vec<Y, n_x> &x) const;
         template <typename Y, size_t n_x>
@@ -224,7 +265,10 @@ namespace utl
         IL double distance(const Vec<Y, n_x> &x) const;
         template <typename Y, size_t n_x>
         IL double projection_onto(const Vec<Y, n_x> &x) const;
-        IL void rotate(char8_t axis, double angle);
+        IL void rotate(float angle, char8_t axis);
+        IL Vec<T, _size> zero_vector();
+        IL Vec<T, _size> ones_vector();
+        IL Vec<T, _size> random_vector(T min, T max);
     };
 }  // namespace utl
 
@@ -232,6 +276,33 @@ namespace utl
 
 namespace utl
 {
+
+    template <typename T>
+    void Matrix<T>::print()
+    {
+        // Find the maximum width for each column
+        std::vector<size_t> col_widths(_cols, 0);
+        for (size_t j = 0; j < _cols; ++j)
+        {
+            for (size_t i = 0; i < _rows; ++i)
+            {
+                size_t width = std::to_string((*this)(i, j)).size();
+                if (width > col_widths[j]) col_widths[j] = width;
+            }
+        }
+
+        // Print the matrix
+        for (size_t i = 0; i < _rows; ++i)
+        {
+            std::cout << "[ ";
+            for (size_t j = 0; j < _cols; ++j)
+            {
+                std::cout << std::setw(col_widths[j]) << (*this)(i, j) << " ";
+            }
+            std::cout << "]\n";
+        }
+    }
+
     template <typename T>
     template <typename Y>
     IL Matrix<T> Matrix<T>::operator+(const Matrix<Y> &other) const
@@ -251,6 +322,7 @@ namespace utl
         }
         return result;
     }
+
     template <typename T>
     template <typename Y>
     IL Matrix<T> Matrix<T>::operator-(const Matrix<Y> &other) const
@@ -270,6 +342,7 @@ namespace utl
         }
         return result;
     }
+
     template <typename T>
     IL Matrix<T> Matrix<T>::operator*(const T &scalar) const
     {
@@ -283,6 +356,7 @@ namespace utl
         }
         return result;
     }
+
     template <typename T>
     template <typename Y>
     IL Matrix<T> Matrix<T>::operator*(const Matrix<Y> &other) const
@@ -330,6 +404,24 @@ namespace utl
             }
         }
         return result;
+    }
+
+    template <typename T>
+    IL void Matrix<T>::sin()
+    {
+        for (auto &val : data)
+        {
+            val = std::sin(val);
+        }
+    }
+
+    template <typename T>
+    IL void Matrix<T>::cos()
+    {
+        for (auto &val : data)
+        {
+            val = std::cos(val);
+        }
     }
 
     template <typename T>
@@ -414,10 +506,24 @@ namespace utl
             throw std::invalid_argument("Matrix must be square to compute inverse");
         }
 
-        double det = m.determinant();
-        if (det == 0)
+        const double det = m.determinant();
+        if (std::abs(det) < std::numeric_limits<double>::epsilon())
         {
             throw std::runtime_error("Matrix is singular and has no inverse");
+        }
+
+        // Check for singularity before creating the result matrix
+        if (m._rows == 1)
+        {
+            // 1x1 matrix
+            return Matrix<T>(1, 1, 1.0 / m(0, 0));
+        }
+        else if (m._rows == 2)
+        {
+            // 2x2 matrix
+            const T a = m(0, 0), b = m(0, 1), c = m(1, 0), d = m(1, 1);
+            const T inv_det = static_cast<T>(1.0 / det);
+            return Matrix<T>(2, 2, d * inv_det, -b * inv_det, -c * inv_det, a * inv_det);
         }
 
         Matrix<T> result(m._rows, m._cols);
@@ -428,6 +534,7 @@ namespace utl
                 result(i, j) = m.cofactor(i, j) / det;
             }
         }
+
         return result.transpose();
     }
 
@@ -464,9 +571,9 @@ namespace utl
     }
 
     template <typename T>
-    Matrix<T> Matrix<T>::row_reduce(const Matrix<T> &m)
+    Matrix<T> Matrix<T>::row_reduce()
     {
-        Matrix<T> result = m;
+        Matrix<T> result = *this;
         size_t lead = 0;
         for (size_t r = 0; r < result._rows; ++r)
         {
@@ -511,7 +618,97 @@ namespace utl
         }
         return result;
     }
+    template <typename T>
+    size_t Matrix<T>::rank() const
+    {
+        Matrix<T> reduced = this->gauss_elimination().first;
+        size_t rank = 0;
+        for (size_t i = 0; i < _rows; ++i)
+        {
+            bool is_zero_row = true;
+            for (size_t j = 0; j < _cols; ++j)
+            {
+                if (reduced(i, j) != 0)
+                {
+                    is_zero_row = false;
+                    break;
+                }
+            }
+            if (!is_zero_row) ++rank;
+        }
+        return rank;
+    }
+    template <typename T>
+    T Matrix<T>::trace() const
+    {
+        if (_rows != _cols)
+        {
+            throw std::invalid_argument("Matrix must be square to compute trace");
+        }
 
+        T result = 0;
+        for (size_t i = 0; i < _rows; ++i)
+        {
+            result += (*this)(i, i);
+        }
+        return result;
+    }
+    template <typename T>
+    T Matrix<T>::norm() const
+    {
+        T result = 0;
+        for (size_t i = 0; i < _rows; ++i)
+        {
+            for (size_t j = 0; j < _cols; ++j)
+            {
+                result += (*this)(i, j) * (*this)(i, j);
+            }
+        }
+        return std::sqrt(result);
+    }
+    template <typename T>
+    void Matrix<T>::swap_rows(size_t r1, size_t r2)
+    {
+        if (r1 >= _rows || r2 >= _rows)
+        {
+            throw std::out_of_range("Row index out of range");
+        }
+
+        for (size_t j = 0; j < _cols; ++j)
+        {
+            std::swap((*this)(r1, j), (*this)(r2, j));
+        }
+    }
+
+    // Multiply a row by a scalar value
+    template <typename T>
+    void Matrix<T>::multiply_row(size_t r, float scalar)
+    {
+        if (r >= _rows)
+        {
+            throw std::out_of_range("Row index out of range");
+        }
+
+        for (size_t j = 0; j < _cols; ++j)
+        {
+            (*this)(r, j) *= scalar;
+        }
+    }
+
+    // Add a scalar multiple of one row to another row
+    template <typename T>
+    void Matrix<T>::add_scaled_row(size_t r1, size_t r2, float scalar)
+    {
+        if (r1 >= _rows || r2 >= _rows)
+        {
+            throw std::out_of_range("Row index out of range");
+        }
+
+        for (size_t j = 0; j < _cols; ++j)
+        {
+            (*this)(r1, j) += scalar * (*this)(r2, j);
+        }
+    }
     template <typename T>
     std::vector<T> Matrix<T>::eigenvalues(const Matrix<T> &m)
     {
@@ -563,10 +760,11 @@ namespace utl
         for (size_t i = 0; i < n; ++i)
         {
             T x = 1;
+            double tol = 1e-12;  // Desired tolerance for convergence
             for (size_t j = 0; j < 100; ++j)
             {
                 T f = charpoly(x);
-                if (std::abs(f) < 1e-12)
+                if (std::abs(f) < tol)
                 {
                     eigenvals[i] = x;
                     break;
@@ -625,6 +823,286 @@ namespace utl
         }
 
         return eigvecs;
+    }
+
+    template <typename T>
+    std::pair<Matrix<T>, Matrix<T>> Matrix<T>::lu_decomposition()
+    {
+        if (_rows != _cols)
+        {
+            throw std::invalid_argument("LU decomposition requires a square matrix");
+        }
+
+        Matrix<T> L(_rows, _cols);
+        Matrix<T> U(*this);
+
+        for (size_t i = 0; i < _rows; ++i)
+        {
+            // Partial pivoting
+            T maxVal = std::abs(U(i, i));
+            size_t maxRow = i;
+            for (size_t k = i + 1; k < _rows; ++k)
+            {
+                if (std::abs(U(k, i)) > maxVal)
+                {
+                    maxVal = std::abs(U(k, i));
+                    maxRow = k;
+                }
+            }
+
+            if (std::abs(maxVal) < std::numeric_limits<double>::epsilon())
+            {
+                throw std::runtime_error("Matrix is singular or nearly singular");
+            }
+
+            // Swap maximum row with current row
+            for (size_t k = i; k < _rows; ++k)
+            {
+                std::swap(U(maxRow, k), U(i, k));
+                std::swap(L(maxRow, k), L(i, k));
+            }
+
+            L(i, i) = 1;  // Diagonal of L is 1
+            for (size_t j = i + 1; j < _rows; ++j)
+            {
+                T factor = U(j, i) / U(i, i);
+                L(j, i) = factor;
+                for (size_t k = i; k < _cols; ++k)
+                {
+                    U(j, k) -= factor * U(i, k);
+                }
+            }
+        }
+
+        return std::make_pair(L, U);
+    }
+
+    template <typename T>
+    std::pair<Matrix<T>, Matrix<T>> Matrix<T>::qr_decomposition()
+    {
+        if (_rows != _cols)
+        {
+            throw std::invalid_argument("QR decomposition requires a square matrix");
+        }
+
+        Matrix<T> Q(_rows, _cols);
+        Matrix<T> R(_rows, _cols, 0);  // Initialize to zero
+
+        for (size_t k = 0; k < _cols; ++k)
+        {
+            // Compute the kth column of Q
+            for (size_t i = 0; i < _rows; ++i)
+            {
+                Q(i, k) = (*this)(i, k);
+            }
+
+            for (size_t i = 0; i < k; ++i)
+            {
+                T dotProduct = (*this).dot(Q);
+
+                for (size_t j = 0; j < _rows; ++j)
+                {
+                    Q(j, k) -= dotProduct * Q(j, i);
+                }
+            }
+
+            // Normalize the kth column of Q
+            T norm = 0;
+            for (size_t j = 0; j < _rows; ++j)
+            {
+                norm += Q(j, k) * Q(j, k);
+            }
+            norm = std::sqrt(norm);
+
+            if (std::abs(norm) < std::numeric_limits<double>::epsilon())
+            {
+                throw std::runtime_error("Matrix is singular or nearly singular");
+            }
+
+            for (size_t j = 0; j < _rows; ++j)
+            {
+                Q(j, k) /= norm;
+            }
+
+            // Compute the kth row of R
+            for (size_t i = k; i < _cols; ++i)
+            {
+                for (size_t j = 0; j < _rows; ++j)
+                {
+                    R(k, i) += Q(j, k) * (*this)(j, i);
+                }
+            }
+        }
+
+        return std::make_pair(Q, R);
+    }
+
+    template <typename T>
+    Matrix<T> Matrix<T>::augment(const Matrix<T> &other) const
+    {
+        if (_rows != other._rows)
+        {
+            throw std::invalid_argument("Matrix dimensions must match for augmentation");
+        }
+
+        Matrix<T> augmented(_rows, _cols + other._cols);
+        for (size_t i = 0; i < _rows; ++i)
+        {
+            for (size_t j = 0; j < _cols; ++j)
+            {
+                augmented(i, j) = (*this)(i, j);
+            }
+            for (size_t j = 0; j < other._cols; ++j)
+            {
+                augmented(i, _cols + j) = other(i, j);
+            }
+        }
+        return augmented;
+    }
+
+    template <typename T>
+    Matrix<T> Matrix<T>::gauss_elimination() const
+    {
+        Matrix<float> result = (*this);
+
+        int lead = 0;
+        int n_rows = result.rows();
+
+        while (lead < n_rows)
+        {
+            float divisor, multiplier;
+            for (size_t r = 0; r < n_rows; ++r)
+            {
+                divisor = 1 / (float)(result(lead, lead));
+
+                multiplier = (float)result(r, lead) / (float)result(lead, lead) * (-1);
+                if (r == lead)
+                    result.multiply_row(r, divisor);
+                else
+                {
+                    result.add_scaled_row(r, lead, multiplier);
+                }
+            }
+            lead++;
+        }
+        return result;
+    }
+
+    template <typename T>
+    sol_type Matrix<T>::has_solution(const Matrix<T> &reduced_matrix)
+    {
+        size_t non_zero_rows = 0;
+        for (size_t i = 0; i < reduced_matrix.rows(); ++i)
+        {
+            bool is_zero_row = true;
+            for (size_t j = 0; j < reduced_matrix.cols(); ++j)
+            {
+                if (reduced_matrix(i, j) != 0)
+                {
+                    is_zero_row = false;
+                    break;
+                }
+            }
+            if (!is_zero_row) ++non_zero_rows;
+        }
+
+        if (non_zero_rows == reduced_matrix.cols())
+        {
+            return sol_type::Unique;
+        }
+        else if (non_zero_rows < reduced_matrix.cols())
+        {
+            return sol_type::Infinite;
+        }
+        else
+        {
+            return sol_type::NoSolution;
+        }
+    }
+
+    template <typename T>
+    Matrix<T> Matrix<T>::solve_linear_system(const Matrix<T> &b) const
+    {
+        if (_rows != _cols || _rows != b.rows())
+        {
+            throw std::invalid_argument("Invalid matrix and vector dimensions");
+        }
+
+        Matrix<T> augmented = augment(b);
+        Matrix<T> reduced_matrix = augmented.gauss_elimination();
+        sol_type solution_type = has_solution(*this);
+
+        if (solution_type == sol_type::NoSolution)
+        {
+            throw std::runtime_error("No solution exists for the linear system");
+        }
+
+        if (solution_type == sol_type::Infinite)
+        {
+            throw std::runtime_error("Infinite solutions exist for the linear system");
+        }
+
+        Matrix<T> x(_cols, 1);
+        if (solution_type == sol_type::Unique)
+        {
+            for (int i = _rows - 1; i >= 0; --i)
+            {
+                T sum = reduced_matrix(i, _cols);
+                for (size_t j = i + 1; j < _cols; ++j)
+                {
+                    sum -= reduced_matrix(i, j) * x(j, 0);
+                }
+
+                x(i, 0) = sum / reduced_matrix(i, i);
+            }
+        }
+        return x;
+    }
+    template <typename T>
+    IL Matrix<T> Matrix<T>::identity_matrix(size_t n)
+    {
+        Matrix<T> result(n, n);
+        for (size_t i = 0; i < n; ++i)
+        {
+            result(i, i) = static_cast<T>(1);
+        }
+        return result;
+    }
+
+    template <typename T>
+    IL Matrix<T> Matrix<T>::zero_matrix(size_t n)
+    {
+        Matrix<T> result(n, n);
+        for (size_t i = 0; i < n; ++i)
+        {
+            for (size_t j = 0; j < n; ++j) result(i, j) = static_cast<T>(0);
+        }
+        return result;
+    }
+
+    template <typename T>
+    IL Matrix<T> Matrix<T>::ones_matrix(size_t n)
+    {
+        Matrix<T> result(n, n);
+        for (size_t i = 0; i < n; ++i)
+        {
+            for (size_t j = 0; j < n; ++j) result(i, j) = static_cast<T>(1);
+        }
+        return result;
+    }
+
+    template <typename T>
+    IL Matrix<T> Matrix<T>::random_matrix(size_t rows, size_t cols, T min, T max)
+    {
+        Matrix<T> result(rows, cols);
+        for (size_t i = 0; i < rows; ++i)
+        {
+            for (size_t j = 0; j < cols; ++j)
+            {
+                result(i, j) = min + static_cast<T>(rand()) / (static_cast<T>(RAND_MAX / (max - min)));
+            }
+        }
+        return result;
     }
 
     // Definitions of Vec member functions
@@ -750,6 +1228,46 @@ namespace utl
     }
 
     template <typename T, size_t _size>
+    template <typename Y>
+    Vec<T, _size> Vec<T, _size>::operator*(const Matrix<Y> &m) const
+    {
+        if (m.cols() != _size)
+        {
+            throw std::invalid_argument("Vector and matrix dimensions do not match for multiplication");
+        }
+
+        Vec<T, m.rows()> result;
+        for (size_t i = 0; i < m.rows(); ++i)
+        {
+            T sum = static_cast<T>(0);
+            for (size_t j = 0; j < _size; ++j)
+            {
+                sum += (*this)[j] * m(i, j);
+            }
+            result[i] = sum;
+        }
+        return result;
+    }
+
+    template <typename T, size_t _size>
+    IL void Vec<T, _size>::sin()
+    {
+        for (size_t i = 0; i < _size; ++i)
+        {
+            (*this)[i] = std::sin((*this)[i]);
+        }
+    }
+
+    template <typename T, size_t _size>
+    IL void Vec<T, _size>::cos()
+    {
+        for (size_t i = 0; i < _size; ++i)
+        {
+            (*this)[i] = std::cos((*this)[i]);
+        }
+    }
+
+    template <typename T, size_t _size>
     template <typename Y, size_t n_x>
     IL double Vec<T, _size>::dot(const Vec<Y, n_x> &x) const
     {
@@ -805,7 +1323,7 @@ namespace utl
     template <typename T, size_t _size>
     IL void Vec<T, _size>::power(float x)
     {
-        if (!std::isfinite(x)) std::invalid_argument("Power must be a finite number");
+        if (!std::isfinite(x)) throw std::invalid_argument("Power must be a finite number");
 
         for (size_t i = 0; i < _size; ++i)
         {
@@ -889,7 +1407,7 @@ namespace utl
     }
 
     template <typename T, size_t _size>
-    IL void Vec<T, _size>::rotate(char8_t axis, double angle)
+    IL void Vec<T, _size>::rotate(float angle, char8_t axis)
     {
         if (_size == 2)
         {
@@ -900,8 +1418,8 @@ namespace utl
 
             Vec<T, _size> result;
 
-            double cosA = cos(angle);
-            double sinA = sin(angle);
+            double cosA = std::cos(angle);
+            double sinA = std::sin(angle);
 
             double x = (*this)[0];
             double y = (*this)[1];
@@ -914,8 +1432,8 @@ namespace utl
         {
             Vec<T, _size> result;
 
-            double cosA = cos(angle);
-            double sinA = sin(angle);
+            double cosA = std::cos(angle);
+            double sinA = std::sin(angle);
 
             switch (axis)
             {
@@ -950,6 +1468,35 @@ namespace utl
             throw std::invalid_argument("Rotation only supported for vectors of size 2 or 3");
         }
     }
+
+    template <typename T, size_t _size>
+    IL Vec<T, _size> Vec<T, _size>::zero_vector()
+    {
+        for (size_t i = 0; i < _size; ++i)
+        {
+            (*this)[i] = 0;
+        }
+    }
+
+    template <typename T, size_t _size>
+    IL Vec<T, _size> Vec<T, _size>::ones_vector()
+    {
+        for (size_t i = 0; i < _size; ++i)
+        {
+            (*this)[i] = 1;
+        }
+    }
+
+    template <typename T, size_t _size>
+    IL Vec<T, _size> Vec<T, _size>::random_vector(T min, T max)
+    {
+        for (size_t i = 0; i < _size; ++i)
+        {
+            (*this)[i] = min + static_cast<T>(rand()) / (static_cast<T>(RAND_MAX / (max - min)));
+        }
+    }
+
 }  // namespace utl
 
 #endif  // L_GEBRA_IMPLEMENTATION
+
