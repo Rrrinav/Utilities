@@ -133,15 +133,31 @@ namespace utl
         }
         // Constructor to create a row matrix of size rows x 1 and initialize with initList
         IL Matrix(std::initializer_list<T> init_list) : _rows(1), _cols(init_list.size()), data(init_list) {}
-        // Copy constructor
-        IL Matrix(std::vector<T> &&other) noexcept
+        // Move constructor
+        // Move constructor
+        template <typename U>
+        IL Matrix(std::vector<U> &&other) noexcept
             : _rows(data.size()), _cols(data.empty() ? 0 : data.size() / _rows), data(std::move(other))
         {
         }
+
         // Constructor to create a matrix of size rows x cols and initialize all elements with val
         Matrix<T>(size_t rows, size_t cols, T val) : _rows(rows), _cols(cols), data(rows * cols, val) {}
         // Constructor to create a column matrix of size rows x 1 and initialize with initList
         Matrix(size_t rows, std::initializer_list<T> initList) : Matrix(rows, 1, initList) {}
+
+        // Copy Constructor
+        template <typename Y>
+        IL Matrix<T>(const std::vector<Y> &other) : _rows(other.size()), _cols(other.empty() ? 0 : other.size() / _rows)
+        {
+            for (const auto &row : other)
+            {
+                for (const auto &val : row)
+                {
+                    data.push_back(val);
+                }
+            }
+        }
 
         // Destructor
         V IL ~Matrix() = default;
@@ -327,16 +343,28 @@ namespace utl
         }
         // Copy Constructor
         template <typename Y>
-        IL Vec(const Vec<Y, _size> &other) : Matrix<T>(other)
+        IL Vec(const std::vector<Y> &other) : Matrix<T>(other)
         {
         }
         // Move Constructor
         template <typename Y>
-        IL Vec(Vec<Y, _size> &&other) noexcept : Matrix<T>(std::move(other))
+        IL Vec(const std::vector<Y> &&other) noexcept : Matrix<T>(std::move(other))
         {
         }
+        
+        // Copy Constructor for conversion
+        template <typename Y>
+        IL Vec(const Vec<Y, _size> &other) : Matrix<T>(_size, 1)
+        {
+            // Copy each element, performing necessary conversions
+            for (size_t i = 0; i < _size; ++i)
+            {
+                (*this)[i] = static_cast<T>(other[i]);
+            }
+        }
+
         // Destructor
-        ~Vec()= default;
+        ~Vec() = default;
         //-------------------------------------------------------------------------------------------------
         //                                  | VECTOR FUNCTIONS |
         //-------------------------------------------------------------------------------------------------
