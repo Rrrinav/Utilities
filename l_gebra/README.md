@@ -47,6 +47,11 @@ C++ standard library
 
 Simply include the "l_gebra.hpp" header files in your project and put #define "L_GEBRA_IMPLEMENTATION" macro before it.
 
+## Inspirations
+[qbLinAlg](https://github.com/QuantitativeBytes/qbLinAlg)
+[la](https://github.com/tsoding/la)
+[stb](https://github.com/nothings/stb)
+
 ## License
 
 This library is released under the [MIT License](https://opensource.org/license/mit).
