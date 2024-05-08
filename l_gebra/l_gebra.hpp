@@ -144,7 +144,7 @@ namespace utl
         Matrix(size_t rows, std::initializer_list<T> initList) : Matrix(rows, 1, initList) {}
 
         // Destructor
-        IL ~Matrix() = default;
+        V IL ~Matrix() = default;
 
         //-------------------------------------------------------------------------------------------------
         //                   | OPERATOR OVERLOADING & GETTERS/SETTERS |
@@ -336,7 +336,7 @@ namespace utl
         {
         }
         // Destructor
-        ~Vec<T, _size>();
+        ~Vec()= default;
         //-------------------------------------------------------------------------------------------------
         //                                  | VECTOR FUNCTIONS |
         //-------------------------------------------------------------------------------------------------
