@@ -1,55 +1,52 @@
-# L_Gebra  
+# Linear Algebra Library
 
-**A simple header-only linear algebra library**
-
-L_Gebra is a lightweight linear algebra library implemented in C++. It provides a simple interface for working with vectors of any size and performing basic arithmetic operations on them.
+This is a C++ library for performing basic linear algebra operations including matrix and vector arithmetic, transformations, and decompositions. It provides a `Matrix` class for matrices and a `Vec` class for vectors.
 
 ## Features
 
-- Header-only: No need to compile or link, just include the header file in your project.
-- Support for vectors of any size, with element-wise arithmetic operations.
-- Scalar multiplication and addition.
-- Easy to use and integrate into your projects.
+- Matrix and vector arithmetic operations
+- Matrix transformations: transpose, inverse, power, determinant, trace, etc.
+- Vector operations: dot product, cross product, magnitude, normalization, etc.
+- QR decomposition
+- Gaussian elimination for solving linear systems
+- Eigenvalue and eigenvector calculations
+- Utility functions to create identity, zero, ones, and random matrices/vectors
+- Interpolation functions (lerp) for matrices and vectors
 
 ## Usage
 
-To use L_Gebra in your project, simply include the `lgebra.hpp` header file after macro L_GEBRA_IMPLEMENTATION. 
-
-You will also have to use namespace **utl**.
-
-Example usage:
+### Matrix Class
 
 ```cpp
-#define L_GEBRA_IMPLEMENTATION
-#include "lgebra.hpp"
-#include <iostream>
+#include "Matrix.h"
 
-int main() {
-  // Create a vector with initial values
-  utl::vec<double> v = {1.0, 2.0, 3.0};
+// Create a 3x3 matrix initialized with zeros
+utl::Matrix<float> mat(3, 3);
 
-  // Multiply by scalar
-  v = v.multiply(2.0);
-  std::cout << "After multiplying by 2: ";
-  v.print(); // Output: [ 2 4 6 ]
+// Access elements using () operator
+mat(0, 0) = 1.0f;
+mat(1, 1) = 2.0f;
+mat(2, 2) = 3.0f;
 
-  // Add scalar
-  v = v.add(1.0);
-  std::cout << "After adding 1: ";
-  v.print(); // Output: [ 3 5 7 ]
+// Perform operations
+utl::Matrix<float> transposed = mat.transpose();
+double det = mat.determinant();
+// More operations...
 
-  // Multiply by 0.5 and add 1
-  v = v.multiply(0.5).add(1.0);
-  std::cout << "After multiplying by 0.5 and adding 1: ";
-  v.print(); // Output: [ 2 3.5 5 ]
-
-  return 0;
-}
+// Solve linear system
+utl::Matrix<float> b(3, {{1.0}, {2.0}, {3.0}});
+utl::Matrix<float> solution = mat.solve_linear_system(b);
+utl::Matrix<float> id = Matrix<float>::identity_matrix(10);
 ```
+
+## Dependencies
+
+C++ standard library
+
+## Installation
+
+Simply include the "l_gebra.hpp" header files in your project and put #define "L_GEBRA_IMPLEMENTATION" macro before it.
+
 ## License
 
-This library is licensed under the MIT License. See the LICENSE file for details
-
-## Warning
-
-This isn't fully functional version, it is yet in devlopment.
+This library is released under the [MIT License](https://opensource.org/license/mit).
