@@ -50,6 +50,8 @@
 
 #pragma once
 
+#define L_GEBRA_IMPLEMENTATION
+
 #include <uchar.h>
 
 #include <cmath>
@@ -90,9 +92,7 @@ namespace utl
     {
     private:
         // Private constructor for the matrix class
-        Matrix(size_t rows, size_t cols, std::initializer_list<T> initList) : _rows(rows), _cols(cols), data(initList)
-        {
-        }
+        Matrix(size_t rows, size_t cols, std::initializer_list<T> initList) : _rows(rows), _cols(cols), data(initList) {}
 
     protected:
         size_t _rows;
@@ -110,7 +110,7 @@ namespace utl
         IL Matrix(size_t rows, size_t cols) : _rows(rows), _cols(cols), data(rows * cols, 0) {}
         // Constructor to create a matrix of size rows x cols and initialize all elements with val
         IL Matrix(std::initializer_list<std::initializer_list<T>> initList)
-            : _rows(initList.size()), _cols(initList.size() > 0 ? initList.begin() -> size() : 0)
+            : _rows(initList.size()), _cols(initList.size() > 0 ? initList.begin()->size() : 0)
         {
             size_t size = 0;
             size_t rowSize = _cols;  // Size of the first row
@@ -337,9 +337,7 @@ namespace utl
         // Constructor with coloumn matrix
         Vec(const Matrix<T> &matrix) : Matrix<T>(matrix)
         {
-            if (matrix.rows() != _size || matrix.cols() != 1)
-
-                throw std::invalid_argument("Invalid matrix dimensions for Vec construction");
+            if (matrix.rows() != _size || matrix.cols() != 1) throw std::invalid_argument("Invalid matrix dimensions for Vec construction");
         }
         // Copy Constructor
         template <typename Y>
@@ -351,7 +349,7 @@ namespace utl
         IL Vec(const std::vector<Y> &&other) noexcept : Matrix<T>(std::move(other))
         {
         }
-        
+
         // Copy Constructor for conversion
         template <typename Y>
         IL Vec(const Vec<Y, _size> &other) : Matrix<T>(_size, 1)
@@ -454,7 +452,8 @@ namespace utl
         // Vec<double, 3> v3d = {1.0, 0.0, 0.0};                               |
         // v3d.rotate(1.57079632679, 'y');  // Rotate 90 degrees around Y-axis |
         //----------------------------------------------------------------------
-        IL void rotate(float angle, char8_t axis);
+        IL Vec<T, _size> rotate(float angle, char8_t axis);
+        IL Vec<T, _size> roatate_about_center(const utl::Vec<int, 2> &point, const utl::Vec<int, 2> &center, float angle, char8_t axis);
         //------------------------------------------------------------------------------------
         //                         | EXTRA UTILITY FUNCTIONS |
         //------------------------------------------------------------------------------------
@@ -1621,7 +1620,7 @@ namespace utl
     }
 
     template <typename T, size_t _size>
-    IL void Vec<T, _size>::rotate(float angle, char8_t axis)
+    IL Vec<T, _size> Vec<T, _size>::rotate(float angle, char8_t axis)
     {
         if (_size == 2)
         {
@@ -1675,7 +1674,83 @@ namespace utl
                 default:
                     throw std::invalid_argument("Invalid rotation axis");
             }
-            *this = result;
+            return result;
+        }
+        else
+        {
+            throw std::invalid_argument("Rotation only supported for vectors of size 2 or 3");
+        }
+    }
+
+    template <typename T, size_t _size>
+    IL Vec<T, _size> Vec<T, _size>::roatate_about_center(const utl::Vec<int, 2> &point, const utl::Vec<int, 2> &center, float angle,
+                                                         char8_t axis)
+    {
+        if (_size == 2)
+        {
+            if (axis != 'z' && axis != 'Z')
+            {
+                throw std::invalid_argument("For vectors of size 2, only rotation around the Z-axis is supported");
+            }
+
+            double s = std::sin(angle);
+            double c = std::cos(angle);
+
+            // Translate point back to origin
+            double x = point.x() - center.x();
+            double y = point.y() - center.y();
+
+            // Rotate point
+            double x_new = x * c - y * s;
+            double y_new = x * s + y * c;
+
+            // Translate point back
+            x = x_new + center.x();
+            y = y_new + center.y();
+
+            return {static_cast<T>(x), static_cast<T>(y)};
+        }
+        else if (_size == 3)
+        {
+            Vec<T, _size> result;
+            double cosA = std::cos(angle);
+            double sinA = std::sin(angle);
+
+            // Translate point to center
+            double x = (*this)[0] - center.x();
+            double y = (*this)[1] - center.y();
+            double z = (*this)[2] - center.z();
+
+            switch (axis)
+            {
+                case 'x':
+                case 'X':
+                    result[0] = x;
+                    result[1] = y * cosA - z * sinA;
+                    result[2] = y * sinA + z * cosA;
+                    break;
+                case 'y':
+                case 'Y':
+                    result[0] = x * cosA + z * sinA;
+                    result[1] = y;
+                    result[2] = -x * sinA + z * cosA;
+                    break;
+                case 'z':
+                case 'Z':
+                    result[0] = x * cosA - y * sinA;
+                    result[1] = x * sinA + y * cosA;
+                    result[2] = z;
+                    break;
+                default:
+                    throw std::invalid_argument("Invalid rotation axis");
+            }
+
+            // Translate back
+            result[0] += center.x();
+            result[1] += center.y();
+            result[2] += center.z();
+
+            return result;
         }
         else
         {
