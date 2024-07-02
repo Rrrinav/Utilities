@@ -50,8 +50,6 @@
 
 #pragma once
 
-#define L_GEBRA_IMPLEMENTATION
-
 #include <uchar.h>
 
 #include <cmath>
