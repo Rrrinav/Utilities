@@ -389,10 +389,11 @@ namespace utl
 
     //--------------------------------------| ARITHEMATIC OPERATIONS |--------------------------------------
     IL Vec operator*(const T x) const;
-    IL Vec operator/(const T x) const {
-        Vec result;
-        for (size_t i = 0; i < _size; ++i) result[i] = (*this)[i] / x;
-        return result;
+    IL Vec operator/(const T x) const
+    {
+      Vec result;
+      for (size_t i = 0; i < _size; ++i) result[i] = (*this)[i] / x;
+      return result;
     }
     template <typename Y, size_t n_x>
     IL Vec operator*(const Vec<Y, n_x> &x) const;
@@ -405,40 +406,47 @@ namespace utl
     IL Vec operator-(const Vec<Y, n_x> &x) const;
     template <typename Y>
     Vec<T, _size> operator*(const Matrix<Y> &m) const;
-    IL Vec<T, _size> operator-() const {
-        Vec result;
-        for (size_t i = 0; i < _size; ++i) result[i] = -(*this)[i];
-        return result;
+    IL Vec<T, _size> operator-() const
+    {
+      Vec result;
+      for (size_t i = 0; i < _size; ++i) result[i] = -(*this)[i];
+      return result;
     }
     template <typename Y, size_t n_x>
-    IL Vec<T, _size>& operator+=(const Vec<Y, n_x> &x) {
-        for (size_t i = 0; i < _size; ++i) (*this)[i] += x[i];
-        return *this;
+    IL Vec<T, _size> &operator+=(const Vec<Y, n_x> &x)
+    {
+      for (size_t i = 0; i < _size; ++i) (*this)[i] += x[i];
+      return *this;
     }
     template <typename Y, size_t n_x>
-    IL Vec<T, _size>& operator-=(const Vec<Y, n_x> &x) {
-        for (size_t i = 0; i < _size; ++i) (*this)[i] -= x[i];
-        return *this;
+    IL Vec<T, _size> &operator-=(const Vec<Y, n_x> &x)
+    {
+      for (size_t i = 0; i < _size; ++i) (*this)[i] -= x[i];
+      return *this;
     }
     template <typename Y>
-    IL Vec<T, _size>& operator*=(const Y x) {
-        for (size_t i = 0; i < _size; ++i) (*this)[i] *= x;
-        return *this;
+    IL Vec<T, _size> &operator*=(const Y x)
+    {
+      for (size_t i = 0; i < _size; ++i) (*this)[i] *= x;
+      return *this;
     }
     template <typename Y>
-    IL Vec<T, _size>& operator/=(const Y x) {
-        for (size_t i = 0; i < _size; ++i) (*this)[i] /= x;
-        return *this;
+    IL Vec<T, _size> &operator/=(const Y x)
+    {
+      for (size_t i = 0; i < _size; ++i) (*this)[i] /= x;
+      return *this;
     }
     template <typename Y, size_t n_x>
-    IL Vec<T, _size>& operator*=(const Vec<Y, n_x> &x) {
-        for (size_t i = 0; i < _size; ++i) (*this)[i] *= x[i];
-        return *this;
+    IL Vec<T, _size> &operator*=(const Vec<Y, n_x> &x)
+    {
+      for (size_t i = 0; i < _size; ++i) (*this)[i] *= x[i];
+      return *this;
     }
     template <typename Y, size_t n_x>
-    IL Vec<T, _size>& operator/=(const Vec<Y, n_x> &x) {
-        for (size_t i = 0; i < _size; ++i) (*this)[i] /= x[i];
-        return *this;
+    IL Vec<T, _size> &operator/=(const Vec<Y, n_x> &x)
+    {
+      for (size_t i = 0; i < _size; ++i) (*this)[i] /= x[i];
+      return *this;
     }
 
     //-----------------------------------------------| UTILITY |-------------------------------------------------
