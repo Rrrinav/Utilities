@@ -26,7 +26,7 @@
 | You just need to include this header file in your project and use the vec          |
 | class with namespace utl. You also need macro L_GEBRA_IMPLEMENTATION before        |
 | "#include "l_gebra"" in one of your source files to include the                    |
-| implementation. Basically :- #define L_GEBRA_IMPLEMENTATION #include "l_gebra.hpp" |
+| implementation. Basically :- #define R_ENA_IMPLEMENTATION #include "r_ena.hpp" |
 --------------------------------------------------------------------------------------
 */
 
@@ -68,6 +68,12 @@ namespace utl
     ~R_ena() { delete[] _arena; }
 
     /*
+     * @brief Get the size of arena
+     * @return (size_t) size of the arena
+     */
+    size_t get_size() const { return size; }
+
+    /*
      * @brief Allocate memory
      * @param bytes Number of bytes to allocate
      * @return (void) Pointer to the allocated memory
@@ -105,11 +111,34 @@ namespace utl
     */
     template <typename T>
     void destroy_object(T *ptr);
-    
+
+    /*
+     * @brief allocate memory
+     * @return (size_t) remaining space in the arena
+     */
+    size_t remaining_space();
+
+    /*
+     * @brief Allocate memory
+     * @return (bool) wether a pointer is in the arena or not
+     */
+    bool contains(void *ptr);
+
+    /*
+     * @brief allocate memory
+     * @return (size_t) used space in the arena
+     */
+    size_t used_space();
+
+    /*
+     * @brief Increase size of arena
+     * @param (size_t) new_size New size of the arena
+     * @return (bool) wether the arena was resized or not, generally false if new_size is less than or equal to the current size.
+     * @details Adds more memory to the arena if the new size is greater than the current size.
+     */
+    bool resize(std::size_t new_size);
   };
 }  // namespace utl
-
-
 
 #ifdef R_ENA_IMPLEMENTATION
 
@@ -163,4 +192,26 @@ void utl::R_ena::destroy_object(T *ptr)
     ptr->~T();  // Explicitly call destructor
 }
 
-#endif
+size_t utl::R_ena::remaining_space() { return size - offset; }
+
+bool utl::R_ena::contains(void *ptr)
+{
+  char *char_ptr = static_cast<char *>(ptr);  // Cast to char* for comparison
+  return char_ptr >= _arena && char_ptr < _arena + size;
+}
+
+size_t utl::R_ena::used_space() { return offset; }
+
+bool utl::R_ena::resize(std::size_t new_size)
+{
+  if (new_size <= size)
+    return false;
+  char *new_arena = new char[new_size];
+  std::memcpy(new_arena, _arena, size);
+  delete[] _arena;
+  _arena = new_arena;
+  size = new_size;
+  return true;
+}
+
+#endif  // R_ENA_IMPLEMENTATION
