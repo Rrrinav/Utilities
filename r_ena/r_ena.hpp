@@ -24,9 +24,11 @@
 /*
 --------------------------------| HOW TO USE? |---------------------------------------
 | You just need to include this header file in your project and use the vec          |
-| class with namespace utl. You also need macro L_GEBRA_IMPLEMENTATION before        |
-| "#include "l_gebra"" in one of your source files to include the                    |
-| implementation. Basically :- #define R_ENA_IMPLEMENTATION #include "r_ena.hpp" |
+| class with namespace utl. You also need macro R_ENA_IMPLEMENTATION before        |
+| "#include "r_ena.hpp" in one of your source files to include the                    |
+| implementation. Basically :-                                                       |
+| #define R_ENA_IMPLEMENTATION                                                       |
+| #include "r_ena.hpp"                                                               |
 --------------------------------------------------------------------------------------
 */
 
@@ -137,6 +139,8 @@ namespace utl
      * @details Adds more memory to the arena if the new size is greater than the current size.
      */
     bool resize(std::size_t new_size);
+
+    void print_state() const;
   };
 }  // namespace utl
 
@@ -212,6 +216,11 @@ bool utl::R_ena::resize(std::size_t new_size)
   _arena = new_arena;
   size = new_size;
   return true;
+}
+
+void utl::R_ena::print_state() const
+{
+  std::cout << "[ STATE ]: Arena Size: " << size << ", Used Memory: " << offset << ", Available Memory: " << get_available_memory() << '\n';
 }
 
 #endif  // R_ENA_IMPLEMENTATION
